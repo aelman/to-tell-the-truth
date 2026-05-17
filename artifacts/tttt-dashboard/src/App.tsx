@@ -13,6 +13,14 @@ import { VerdictPanel } from "@/components/VerdictPanel";
 
 const queryClient = new QueryClient();
 
+function DebugPanel({ state }: { state: object }) {
+  return (
+    <pre className="fixed bottom-0 left-0 right-0 max-h-40 overflow-auto bg-black/80 text-green-400 text-xs p-2 z-50 border-t border-green-800">
+      {JSON.stringify(state, null, 2)}
+    </pre>
+  );
+}
+
 function Dashboard() {
   const { gameState, connectionStatus, resetGame } = useGameSocket();
   const {
@@ -31,6 +39,7 @@ function Dashboard() {
       <div className="min-h-screen bg-background relative">
         <ConnectionStatus status={connectionStatus} />
         <ShowTitle />
+        <DebugPanel state={gameState} />
       </div>
     );
   }
@@ -119,6 +128,8 @@ function Dashboard() {
           </div>
         </main>
       )}
+
+      <DebugPanel state={gameState} />
 
       {/* Verdict / Evaluating Overlay */}
       <VerdictPanel
