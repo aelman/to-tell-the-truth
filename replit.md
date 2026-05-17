@@ -1,36 +1,48 @@
-# [Project name]
+# To Tell The Truth — Game Show Dashboard
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A live, single-page React dashboard for the "To Tell The Truth" AI voice game show. Connects to an OpenHome agent over WebSocket and visualizes each phase of the game in real time.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/tttt-dashboard run dev` — run the dashboard (port assigned by workflow)
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `VITE_OPENHOME_WS_URL` — your OpenHome agent WebSocket URL (e.g. `wss://your-agent.openhome.xyz/ws`)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React + Vite + Tailwind CSS
+- Fonts: Playfair Display (headings/verdict), Inter (body)
+- Animations: framer-motion, CSS transitions, canvas-confetti (verdict)
+- WebSocket: custom hook with exponential back-off reconnect
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/tttt-dashboard/src/App.tsx` — main app, phase-driven rendering
+- `artifacts/tttt-dashboard/src/hooks/useOpenHomeSocket.ts` — WebSocket + reconnect logic
+- `artifacts/tttt-dashboard/src/components/` — ShowTitle, TopicPill, ConnectionStatus, ContestantCard, QuestionFeed, VerdictPanel
+- `artifacts/tttt-dashboard/src/index.css` — color palette (dark indigo + gold), Google Fonts import
+- `artifacts/tttt-dashboard/.env.example` — env var template
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Pure frontend — no backend, no database. All game state arrives via WebSocket messages.
+- Single `gameState` object replaced/merged on each incoming `tttt_state` message.
+- Phase-driven rendering: the `phase` field in game state controls which panels are visible/active.
+- Exponential back-off reconnect: 1s → 2s → 4s → … capped at 30s.
+- State resets to `intro` when phase returns to `"intro"` or user clicks "Play Again".
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Real-time game show dashboard with:
+- Intro screen with pulsing microphone while waiting for topic
+- Topic reveal pill with spinner during question generation
+- Questions list with 150ms staggered fade-in
+- Contestant cards with active gold glow, dimmed inactive state
+- Scrollable Q&A feed with blue (C1) / purple (C2) answer borders and blinking "awaiting answer" cursor
+- "Deliberating" panel with rotating gold ring animation
+- Verdict reveal with count-up score animation, winner announcement, confetti burst
+- Live/Disconnected status pill in top-right corner
 
 ## User preferences
 
@@ -38,7 +50,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Google Fonts `@import url(...)` must be the very first line of `index.css` — PostCSS fails silently otherwise.
+- `VITE_OPENHOME_WS_URL` must be set; app logs a warning but degrades gracefully (stays on intro screen).
+- The WebSocket URL must be prefixed with `wss://` (not `ws://`) for production OpenHome endpoints.
 
 ## Pointers
 

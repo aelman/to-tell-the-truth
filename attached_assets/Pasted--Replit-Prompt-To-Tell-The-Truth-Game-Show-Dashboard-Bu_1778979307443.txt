@@ -1,0 +1,155 @@
+# Replit Prompt — "To Tell The Truth" Game Show Dashboard
+
+Build a single-page web app (React + Vite + Tailwind CSS) that serves as a live game show dashboard for the "To Tell The Truth" AI voice game. The app connects to an OpenHome agent over WebSocket and visualizes each phase of the game in real time.
+
+---
+
+## WebSocket Connection
+
+On load, connect to the OpenHome WebSocket at the URL stored in the env var `VITE_OPENHOME_WS_URL` (e.g. `wss://your-agent.openhome.xyz/ws`). Listen for messages with `data_type === "tttt_state"`. Reconnect automatically with exponential back-off (1s, 2s, 4s … up to 30s). Show a small status pill in the top-right corner: green "LIVE" when connected, red "DISCONNECTED" otherwise.
+
+All game state lives in a single `gameState` object that is replaced/merged on each incoming message.
+
+---
+
+## Overall Visual Style
+
+- Dark background (#0d0d1a — near-black indigo)
+- Gold accent (#f5c518 — classic game show gold)
+- White text for primary content, gray-400 for secondary
+- A bold serif headline font (use Google Fonts: "Playfair Display") for the show title and verdict
+- Monospace or clean sans-serif (Inter) for question/answer text
+- Rounded cards with subtle glows for active elements
+- Subtle confetti burst (canvas-confetti) on the verdict reveal
+
+---
+
+## Layout
+
+```
+┌─────────────────────────────────────────────────────┐
+│  🎙  TO TELL THE TRUTH          Topic pill  [LIVE] │
+├──────────────────┬──────────────────────────────────┤
+│   CONTESTANT 1   │   CONTESTANT 2                   │
+│   Score card     │   Score card                     │
+├──────────────────┴──────────────────────────────────┤
+│              Question Feed (scrollable)              │
+├─────────────────────────────────────────────────────┤
+│                   VERDICT PANEL                      │
+└─────────────────────────────────────────────────────┘
+```
+
+On mobile, stack all panels vertically.
+
+---
+
+## Phases & What to Show
+
+The incoming `data.phase` field drives which panel is visible/active.
+
+### `"intro"`
+Show the show title full-screen with a pulsing microphone icon and the text "Waiting for topic…"
+
+### `"topic_chosen"` / `"generating_questions"`
+Display the topic in a large gold pill. Show a spinner with "Generating questions…"
+
+### `"questions_ready"`
+Show all 5 questions in a numbered list under "Today's Questions". Fade them in one by one with a 150ms stagger.
+
+### `"player_intro"`
+Highlight the active contestant card (golden border glow). Dim the inactive one.
+
+### `"question_asked"`
+In the Question Feed, add a new row showing the question number and text. Mark it as "awaiting answer…" with a blinking cursor.
+
+### `"answer_received"`
+Update the current row in the Question Feed with the player's answer under the question. Use a left border color to distinguish players: blue for Contestant 1, purple for Contestant 2. Also show a compact version inside the contestant's card.
+
+### `"evaluating"`
+Show a centered panel: "The panel is deliberating…" with a slow rotating gold ring animation.
+
+### `"verdict"`
+Dramatic reveal:
+1. Show both score cards side by side with animated count-up numbers for accuracy, depth, and confidence (each 0–10).
+2. Below each score card show the one-sentence reasoning in italics.
+3. After a 1.5s delay, flash the verdict panel: bold "THE REAL EXPERT IS — CONTESTANT [N]" in large Playfair Display gold text.
+4. Show the explanation sentence below in white.
+5. Fire confetti.
+6. Add a "Play Again" button that resets state to `intro`.
+
+---
+
+## Contestant Score Card Component
+
+Each card shows:
+- "CONTESTANT 1" / "CONTESTANT 2" header
+- Three score bars: Accuracy, Depth, Confidence (animated width from 0% to value/10 * 100%)
+- Total score badge (e.g. "24 / 30")
+- Reasoning sentence (italic, visible only during verdict phase)
+- Active glow border when it's their turn to answer
+
+---
+
+## Question Feed Component
+
+A scrollable panel (max-height ~40vh on desktop, 50vh on mobile). Each entry:
+
+```
+Q3 ─────────────────────────────────────────────────
+   What is the Maillard reaction and why does it matter?
+   ╔ C1 ▸ It's the browning reaction between amino acids and sugars…
+   ╚ C2 ▸ [awaiting answer…]
+```
+
+Auto-scroll to the bottom on new content. Keep all previous Q&A visible.
+
+---
+
+## State Reset
+
+When phase returns to `"intro"`, clear all game state and restart the intro animation.
+
+---
+
+## Environment Variables
+
+```
+VITE_OPENHOME_WS_URL=wss://your-agent.openhome.xyz/ws
+```
+
+Provide a `.env.example` with this variable and a comment explaining where to find the URL in the OpenHome dashboard.
+
+---
+
+## File Structure
+
+```
+/
+├── index.html
+├── .env.example
+├── vite.config.js
+├── tailwind.config.js
+├── src/
+│   ├── main.jsx
+│   ├── App.jsx
+│   ├── hooks/
+│   │   └── useOpenHomeSocket.js   ← WebSocket + reconnect logic
+│   └── components/
+│       ├── ShowTitle.jsx
+│       ├── TopicPill.jsx
+│       ├── ContestantCard.jsx
+│       ├── QuestionFeed.jsx
+│       └── VerdictPanel.jsx
+└── package.json
+```
+
+---
+
+## Dependencies
+
+- react, react-dom
+- vite, @vitejs/plugin-react
+- tailwindcss, autoprefixer, postcss
+- canvas-confetti
+
+No UI component library — build everything with Tailwind utilities.
