@@ -34,6 +34,7 @@ server.on("upgrade", (request, socket, head) => {
 
 wss.on("connection", (ws) => {
   clients.add(ws);
+  console.log(`[ws] client connected, total=${clients.size}`);
   logger.info({ clientCount: clients.size }, "WebSocket client connected");
 
   if (lastEvent) {
